@@ -1,45 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
 * {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
 }
 
 html {
-  scroll-behavior: smooth;
+    scroll-behavior: smooth;
 }
 
 body {
-  background: #FFFFFF;
-  color: #0B2D6E;
-  font-family: 'Inter', sans-serif;
+    background: #FFFFFF;
+    color: #0B2D6E;
+    font-family: 'Inter', sans-serif;
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #00C9B1, #0B2D6E);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+    background: linear-gradient(135deg, #00C9B1, #0B2D6E);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .gradient-bg {
-  background: linear-gradient(135deg, #0B2D6E 0%, #0e3d8a 50%, #0B2D6E 100%);
+    background: linear-gradient(135deg, #0B2D6E 0%, #0e3d8a 50%, #0B2D6E 100%);
 }
 
 .card-hover {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card-hover:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 40px rgba(0, 201, 177, 0.15);
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px rgba(0, 201, 177, 0.15);
 }
 
 .lagoon-glow {
-  box-shadow: 0 0 30px rgba(0, 201, 177, 0.3);
+    box-shadow: 0 0 30px rgba(0, 201, 177, 0.3);
 }

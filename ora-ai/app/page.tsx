@@ -6,14 +6,14 @@ import Pricing from "@/components/Pricing";
 import Footer from "@/components/Footer";
 
 export default function Home() {
-  return (
-    <main>
-      <Navbar />
-      <Hero />
-      <Agents />
-      <HowItWorks />
-      <Pricing />
-      <Footer />
-    </main>
-  );
-}
+    return (
+          <main>
+                <Navbar />
+                <Hero />
+                <Agents />
+                <HowItWorks />
+                <Pricing />
+                <Footer />
+          </main>main>
+        );
+}</main>

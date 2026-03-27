@@ -1,13 +1,6 @@
 "use client";
 
 import { useState } from "react";
-
-const agents = [
-  { name: "Teva", role: "Réseaux Sociaux", emoji: "📱", active: true, tasks: 142, color: "bg-pink-500" },
-  { name: "Hina", role: "Service Client", emoji: "💬", active: true, tasks: 87, color: "bg-lagoon" },
-"use client";
-
-import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 
 const agents = [

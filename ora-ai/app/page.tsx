@@ -14,6 +14,6 @@ export default function Home() {
                 <HowItWorks />
                 <Pricing />
                 <Footer />
-          </main>main>
+          </main>
         );
-}</main>
+}

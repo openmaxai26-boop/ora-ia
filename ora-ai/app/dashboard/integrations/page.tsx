@@ -1,182 +1,164 @@
 "use client";
 
 import { useState } from "react";
+import DashboardLayout from "@/components/DashboardLayout";
+import { useCurrentUser, useIntegrations } from "@/lib/hooks/useDashboard";
+import { getSupabaseBrowserClient } from "@/lib/db/supabase";
 
-const integrations = [
-  {
-        category: "Réseaux sociaux",
-        items: [
-          { name: "Facebook", icon: "📘", connected: true, description: "Page et Messenger connectés" },
-          { name: "Instagram", icon: "📸", connected: true, description: "Compte professionnel connecté" },
-          { name: "TikTok", icon: "🎵", connected: false, description: "Publiez des vidéos automatiquement" },
-          { name: "LinkedIn", icon: "💼", connected: false, description: "Prospection et recrutement" },
-              ],
-  },
-  {
-        category: "Messagerie",
-        items: [
-          { name: "WhatsApp Business", icon: "💬", connected: true, description: "Numéro WhatsApp lié" },
-          { name: "Gmail", icon: "✉️", connected: false, description: "Gestion des emails entrants" },
-          { name: "Messenger", icon: "💭", connected: true, description: "Réponses automatiques activées" },
-              ],
-  },
-  {
-        category: "Productivité",
-        items: [
-          { name: "Google Calendar", icon: "📅", connected: false, description: "Prise de rendez-vous automatique" },
-          { name: "Notion", icon: "📝", connected: false, description: "Synchronisation des rapports" },
-          { name: "Stripe", icon: "💳", connected: false, description: "Paiements et abonnements" },
-              ],
-  },
-  {
-        category: "Site web",
-        items: [
-          { name: "WordPress", icon: "🌐", connected: false, description: "Publication d'articles SEO" },
-          { name: "Wix", icon: "🎨", connected: false, description: "Mise à jour de contenu" },
-          { name: "Shopify", icon: "🛒", connected: false, description: "E-commerce & notifications" },
-              ],
-  },
-  ];
+const ALL_INTEGRATIONS = [
+  { platform: "whatsapp",       label: "WhatsApp Business", icon: "💬", category: "Messagerie", description: "Recevez et répondez aux messages WhatsApp automatiquement via Hina" },
+  { platform: "messenger",      label: "Facebook Messenger", icon: "📨", category: "Messagerie", description: "Gérez vos messages Messenger 24h/24 avec Hina" },
+  { platform: "instagram",      label: "Instagram Business", icon: "📸", category: "Réseaux sociaux", description: "Publiez des posts, stories et reels automatiquement via Teva" },
+  { platform: "facebook",       label: "Facebook Page", icon: "👍", category: "Réseaux sociaux", description: "Publiez du contenu sur votre page Facebook via Teva" },
+  { platform: "tiktok",         label: "TikTok Business", icon: "🎵", category: "Réseaux sociaux", description: "Créez et publiez des vidéos TikTok avec Teva" },
+  { platform: "linkedin",       label: "LinkedIn Company", icon: "💼", category: "Pro", description: "Publiez des offres d'emploi (Manu) et prospectez des clients (Ari)" },
+  { platform: "wordpress",      label: "WordPress", icon: "📝", category: "SEO", description: "Publiez automatiquement des articles SEO via Reva" },
+  { platform: "wix",            label: "Wix", icon: "🌐", category: "SEO", description: "Publiez du contenu sur votre site Wix via Reva" },
+  { platform: "google_calendar",label: "Google Agenda", icon: "📅", category: "Productivité", description: "Planifiez les rendez-vous confirmés par Hina et les entretiens de Manu" },
+  { platform: "notion",         label: "Notion CRM", icon: "🗂️", category: "CRM", description: "Synchronisez vos prospects Ari dans votre base Notion" },
+  { platform: "stripe",         label: "Stripe", icon: "💳", category: "Paiement", description: "Gérez votre abonnement Ora AI" },
+];
+
+const CATEGORIES = [...new Set(ALL_INTEGRATIONS.map((i) => i.category))];
 
 export default function IntegrationsPage() {
-    const [items, setItems] = useState(integrations);
+  const { user } = useCurrentUser();
+  const userId = user?.id ?? null;
 
-  const toggleConnection = (cat: string, name: string) => {
-        setItems((prev) =>
-                prev.map((c) =>
-                          c.category === cat
-                                   ? {
-                                                   ...c,
-                                                   items: c.items.map((i) =>
-                                                                     i.name === name ? { ...i, connected: !i.connected } : i
-                                                                                    ),
-                                   }
-                            : c
-                               )
-                     );
+  const { integrations, loading } = useIntegrations(userId);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>("Tous");
+
+  const displayed =
+    activeCategory === "Tous"
+      ? ALL_INTEGRATIONS
+      : ALL_INTEGRATIONS.filter((i) => i.category === activeCategory);
+
+  const connectedCount = Object.values(integrations).filter(Boolean).length;
+
+  const handleToggle = async (platform: string, currentlyConnected: boolean) => {
+    if (!userId || saving) return;
+    setSaving(platform);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const integ = ALL_INTEGRATIONS.find((i) => i.platform === platform)!;
+
+      await supabase
+        .from("integrations" as never)
+        .upsert(
+          {
+            user_id: userId,
+            platform,
+            label: integ.label,
+            icon: integ.icon,
+            connected: !currentlyConnected,
+            connected_at: !currentlyConnected ? new Date().toISOString() : null,
+          },
+          { onConflict: "user_id,platform" }
+        );
+
+      // Rafraîchir la page pour refléter le changement
+      // (le hook useIntegrations sera remis à jour au prochain render)
+      window.location.reload();
+    } catch (err) {
+      console.error("Erreur toggle intégration :", err);
+    } finally {
+      setSaving(null);
+    }
   };
 
-  const totalConnected = items.flatMap((c) => c.items).filter((i) => i.connected).length;
-
   return (
-        <div className="min-h-screen bg-gray-50">
-          {/* Sidebar */}
-              <aside className="fixed left-0 top-0 bottom-0 w-64 gradient-bg text-white flex flex-col z-40">
-                      <div className="p-6 border-b border-white/10">
-                                <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-lg bg-lagoon flex items-center justify-center">
-                                                          <span className="font-bold text-white text-sm">O</span>span>
-                                            </div>div>
-                                            <span className="text-xl font-bold">
-                                                          Ora <span className="text-lagoon">AI</span>span>
-                                            </span>span>
-                                </div>div>
-                      </div>div>
-                      <nav className="flex-1 p-4 space-y-1">
-                        {[
-          { icon: "🏠", label: "Tableau de bord", href: "/dashboard", active: false },
-          { icon: "🤖", label: "Mes agents", href: "/dashboard/agents", active: false },
-          { icon: "📊", label: "Statistiques", href: "/dashboard/stats", active: false },
-          { icon: "🔗", label: "Intégrations", href: "/dashboard/integrations", active: true },
-          { icon: "⚙️", label: "Paramètres", href: "/dashboard/settings", active: false },
-                    ].map((item) => (
-                                  <a
-                                                  key={item.label}
-                                                  href={item.href}
-                                                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                                                                    item.active
-                                                                      ? "bg-lagoon/20 text-lagoon"
-                                                                      : "text-white/60 hover:bg-white/10 hover:text-white"
-                                                  }`}
-                                                >
-                                                <span>{item.icon}</span>span>
-                                    {item.label}
-                                  </a>a>
-                                ))}
-                      </nav>nav>
-                      <div className="p-4 border-t border-white/10">
-                                <div className="bg-white/10 rounded-xl p-4">
-                                            <p className="text-xs text-white/50 mb-1">Plan actuel</p>p>
-                                            <p className="font-bold text-lagoon">Pro</p>p>
-                                            <p className="text-xs text-white/50 mt-1">9 900 XPF/mois</p>p>
-                                </div>div>
-                      </div>div>
-              </aside>aside>
-        
-          {/* Main content */}
-              <main className="ml-64 p-8">
-                      <div className="flex items-center justify-between mb-8">
-                                <div>
-                                            <h1 className="text-2xl font-black text-ocean">Intégrations</h1>h1>
-                                            <p className="text-ocean/50">
-                                              {totalConnected} connexion(s) active(s) sur {items.flatMap((c) => c.items).length} disponibles
-                                            </p>p>
-                                </div>div>
-                                <div className="bg-lagoon/10 text-lagoon text-sm font-semibold px-4 py-2 rounded-full">
-                                            ✓ Connexions illimitées — Plan Pro
-                                </div>div>
-                      </div>div>
-              
-                      <div className="space-y-8">
-                        {items.map((category) => (
-                      <div key={category.category}>
-                                    <h2 className="text-ocean font-bold text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
-                                                    <span className="w-6 h-px bg-lagoon" />
-                                      {category.category}
-                                    </h2>h2>
-                                    <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-                                      {category.items.map((item) => (
-                                          <div
-                                                                key={item.name}
-                                                                className={`bg-white rounded-2xl p-5 shadow-sm border-2 transition-all ${
-                                                                                        item.connected ? "border-lagoon/30" : "border-gray-100"
-                                                                }`}
-                                                              >
-                                                              <div className="flex items-start justify-between mb-3">
-                                                                                    <div className="flex items-center gap-3">
-                                                                                                            <span className="text-2xl">{item.icon}</span>span>
-                                                                                                            <div>
-                                                                                                                                      <div className="font-bold text-ocean text-sm">{item.name}</div>div>
-                                                                                                                                      <div className="text-ocean/40 text-xs">{item.description}</div>div>
-                                                                                                              </div>div>
-                                                                                      </div>div>
-                                                              </div>div>
-                                                              <button
-                                                                                      onClick={() => toggleConnection(category.category, item.name)}
-                                                                                      className={`w-full py-2 rounded-xl text-sm font-semibold transition-all ${
-                                                                                                                item.connected
-                                                                                                                  ? "bg-green-50 text-green-600 hover:bg-red-50 hover:text-red-500"
-                                                                                                                  : "bg-lagoon/10 text-lagoon hover:bg-lagoon hover:text-white"
-                                                                                        }`}
-                                                                                    >
-                                                                {item.connected ? "✓ Connecté — Déconnecter" : "+ Connecter"}
-                                                              </button>button>
-                                          </div>div>
-                                        ))}
-                                    </div>div>
-                      </div>div>
-                    ))}
-                      </div>div>
-              
-                {/* Help section */}
-                      <div className="mt-10 bg-ocean/5 border border-ocean/10 rounded-2xl p-6">
-                                <div className="flex items-start gap-4">
-                                            <span className="text-3xl">💡</span>span>
-                                            <div>
-                                                          <h3 className="font-bold text-ocean mb-1">Besoin d&apos;aide pour connecter vos outils ?</h3>h3>
-                                                          <p className="text-ocean/60 text-sm mb-3">
-                                                                          Notre équipe à Papeete vous accompagne pas à pas pour configurer vos intégrations, même sans compétences techniques.
-                                                          </p>p>
-                                                          <a
-                                                                            href="https://wa.me/689"
-                                                                            className="inline-block bg-lagoon text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-ocean transition-colors"
-                                                                          >
-                                                                          Contacter le support WhatsApp →
-                                                          </a>a>
-                                            </div>div>
-                                </div>div>
-                      </div>div>
-              </main>main>
-        </div>div>
-      );
-}</div>
+    <DashboardLayout>
+      <div className="p-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-black text-ocean">Intégrations</h1>
+            <p className="text-ocean/50">
+              {loading
+                ? "Chargement..."
+                : connectedCount + " intégration" + (connectedCount > 1 ? "s" : "") + " connectée" + (connectedCount > 1 ? "s" : "")}
+            </p>
+          </div>
+        </div>
+
+        {/* Filtres par catégorie */}
+        <div className="flex gap-2 mb-8 flex-wrap">
+          {["Tous", ...CATEGORIES].map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={
+                "px-4 py-2 rounded-full text-sm font-semibold transition-all " +
+                (activeCategory === cat
+                  ? "bg-lagoon text-white"
+                  : "bg-white text-ocean/60 border border-gray-200 hover:border-lagoon hover:text-lagoon")
+              }
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Grille des intégrations */}
+        <div className="grid grid-cols-1 gap-4">
+          {displayed.map((integ) => {
+            const connected = integrations[integ.platform] ?? false;
+            const isSaving = saving === integ.platform;
+
+            return (
+              <div
+                key={integ.platform}
+                className={
+                  "bg-white rounded-2xl border p-5 flex items-center gap-5 transition-all " +
+                  (connected
+                    ? "border-green-200 bg-green-50/30"
+                    : "border-gray-100 hover:border-lagoon/30")
+                }
+              >
+                {/* Icône */}
+                <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-2xl flex-shrink-0">
+                  {integ.icon}
+                </div>
+
+                {/* Infos */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="font-bold text-ocean">{integ.label}</span>
+                    <span className="text-xs text-ocean/40 bg-gray-100 px-2 py-0.5 rounded-full">
+                      {integ.category}
+                    </span>
+                  </div>
+                  <p className="text-ocean/50 text-sm truncate">{integ.description}</p>
+                </div>
+
+                {/* Toggle */}
+                <div className="flex-shrink-0 flex items-center gap-3">
+                  {connected && (
+                    <span className="text-xs text-green-600 font-semibold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                      Connecté
+                    </span>
+                  )}
+                  <button
+                    onClick={() => handleToggle(integ.platform, connected)}
+                    disabled={!!saving || loading}
+                    className={
+                      "px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50 " +
+                      (connected
+                        ? "bg-red-50 text-red-500 hover:bg-red-100"
+                        : "bg-lagoon text-white hover:bg-ocean")
+                    }
+                  >
+                    {isSaving ? "…" : connected ? "Déconnecter" : "Connecter"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}

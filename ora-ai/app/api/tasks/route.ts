@@ -1,176 +1,169 @@
 // ============================================================
-// GET  /api/tasks       — liste les tâches d'un utilisateur
-// POST /api/tasks       — crée une nouvelle tâche
+// GET  /api/tasks  — liste les tâches d'un utilisateur
+// POST /api/tasks  — crée une nouvelle tâche
+// Branché sur Supabase (table public.tasks)
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
 import type { Task, AgentId, TaskStatus, ApiResponse } from "@/lib/types";
+import { getSupabaseServerClient } from "@/lib/db/supabase";
 
-// ------------------------------------------------------------
-// Données mock (remplacer par la vraie DB)
-// ------------------------------------------------------------
-
-// TODO: remplacer par Prisma / Supabase / Drizzle
-// import { db } from "@/lib/db";
-
-const MOCK_TASKS: Task[] = [
-  {
-    id: "task_001",
-    agentId: "teva",
-    type: "social_post",
-    status: "success",
-    platform: "instagram",
-    title: "Publication Instagram — Ia ora na Tahiti 🌺",
-    executedAt: new Date(Date.now() - 3_600_000).toISOString(),
-    createdAt: new Date(Date.now() - 3_600_000).toISOString(),
-    metadata: { caption: "Ia ora na Tahiti 🌺", hashtags: ["#Polynésie", "#Fenua"] },
-  },
-  {
-    id: "task_002",
-    agentId: "hina",
-    type: "customer_reply",
-    status: "success",
-    platform: "whatsapp",
-    title: "Réponse WhatsApp à +689 87 12 34 56",
-    executedAt: new Date(Date.now() - 7_200_000).toISOString(),
-    createdAt: new Date(Date.now() - 7_200_000).toISOString(),
-    metadata: { from: "+689 87 12 34 56", inbound: "Quels sont vos horaires ?", outbound: "Bonjour ! Nous sommes ouverts…" },
-  },
-  {
-    id: "task_003",
-    agentId: "reva",
-    type: "seo_article",
-    status: "success",
-    platform: "wordpress",
-    title: "Article SEO : artisanat Tahiti guide complet 2026",
-    executedAt: new Date(Date.now() - 86_400_000).toISOString(),
-    createdAt: new Date(Date.now() - 86_400_000).toISOString(),
-    metadata: { slug: "artisanat-tahiti-guide-2026", wordCount: 1200 },
-  },
-  {
-    id: "task_004",
-    agentId: "manu",
-    type: "job_post",
-    status: "pending",
-    platform: "linkedin",
-    title: "Offre publiée : Responsable boutique — Papeete",
-    scheduledAt: new Date(Date.now() + 3_600_000).toISOString(),
-    createdAt: new Date().toISOString(),
-    metadata: { jobTitle: "Responsable boutique", location: "Papeete" },
-  },
-  {
-    id: "task_005",
-    agentId: "ari",
-    type: "prospect_message",
-    status: "success",
-    platform: "linkedin",
-    title: "1er contact : Marie Teriitahi (Fare Natura)",
-    executedAt: new Date(Date.now() - 1_800_000).toISOString(),
-    createdAt: new Date(Date.now() - 1_800_000).toISOString(),
-    metadata: { prospectName: "Marie Teriitahi", company: "Fare Natura" },
-  },
-];
-
-// ------------------------------------------------------------
-// GET /api/tasks
-// ------------------------------------------------------------
-
+// ============================================================
+// GET /api/tasks?limit=20&agentId=teva&status=success
+// ============================================================
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
+    const supabase = getSupabaseServerClient();
 
-  const userId = searchParams.get("userId");
-  const agentId = searchParams.get("agentId") as AgentId | null;
-  const status = searchParams.get("status") as TaskStatus | null;
-  const limit = parseInt(searchParams.get("limit") ?? "20", 10);
-  const offset = parseInt(searchParams.get("offset") ?? "0", 10);
+  // ——— Auth ———
+  const {
+        data: { user },
+        error: authError,
+  } = await supabase.auth.getUser();
 
-  if (!userId) {
-    return NextResponse.json(
-      { success: false, error: "userId requis" } satisfies ApiResponse<never>,
-      { status: 400 }
-    );
+  if (authError || !user) {
+        return NextResponse.json<ApiResponse<null>>(
+          { success: false, error: "Non authentifié" },
+          { status: 401 }
+              );
   }
 
-  // TODO: remplacer par requête réelle en DB
-  // const tasks = await db.task.findMany({
-  //   where: {
-  //     userId,
-  //     ...(agentId ? { agentId } : {}),
-  //     ...(status ? { status } : {}),
-  //   },
-  //   orderBy: { createdAt: "desc" },
-  //   take: limit,
-  //   skip: offset,
-  // });
-  // const total = await db.task.count({ where: { userId, ... } });
+  // ——— Paramètres de filtre (optionnels) ———
+  const { searchParams } = new URL(req.url);
+    const limit  = Math.min(parseInt(searchParams.get("limit")  ?? "20"), 100);
+    const agentId = searchParams.get("agentId") as AgentId | null;
+    const status  = searchParams.get("status")  as TaskStatus | null;
 
-  let tasks = MOCK_TASKS;
-  if (agentId) tasks = tasks.filter((t) => t.agentId === agentId);
-  if (status) tasks = tasks.filter((t) => t.status === status);
+  // ——— Requête Supabase ———
+  let query = supabase
+      .from("tasks")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(limit);
 
-  const paginated = tasks.slice(offset, offset + limit);
+  if (agentId) query = query.eq("agent_id", agentId);
+    if (status)  query = query.eq("status", status);
 
-  return NextResponse.json({
-    success: true,
-    data: {
-      tasks: paginated,
-      total: tasks.length,
-      limit,
-      offset,
-    },
-  } satisfies ApiResponse<{ tasks: Task[]; total: number; limit: number; offset: number }>);
+  const { data, error } = await query;
+
+  if (error) {
+        console.error("[GET /api/tasks] Erreur Supabase :", error.message);
+        return NextResponse.json<ApiResponse<null>>(
+          { success: false, error: error.message },
+          { status: 500 }
+              );
+  }
+
+  // ——— Mapper les colonnes snake_case → camelCase ———
+  const tasks: Task[] = (data ?? []).map((row) => ({
+        id:          row.id,
+        agentId:     row.agent_id     as AgentId,
+        type:        row.type,
+        status:      row.status       as TaskStatus,
+        platform:    row.platform,
+        title:       row.title,
+        description: row.description  ?? undefined,
+        scheduledAt: row.scheduled_at ?? undefined,
+        executedAt:  row.executed_at  ?? undefined,
+        error:       row.error        ?? undefined,
+        metadata:    row.metadata     ?? {},
+        createdAt:   row.created_at,
+        updatedAt:   row.updated_at,
+  }));
+
+  return NextResponse.json<ApiResponse<Task[]>>({ success: true, data: tasks });
 }
 
-// ------------------------------------------------------------
+// ============================================================
 // POST /api/tasks
-// ------------------------------------------------------------
-
+// Body : { agentId, type, platform, title, description?, metadata? }
+// ============================================================
 export async function POST(req: NextRequest) {
-  let body: Omit<Task, "id"> & { userId: string };
+    const supabase = getSupabaseServerClient();
 
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json(
-      { success: false, error: "Body JSON invalide" } satisfies ApiResponse<never>,
-      { status: 400 }
-    );
+  // ——— Auth ———
+  const {
+        data: { user },
+        error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+        return NextResponse.json<ApiResponse<null>>(
+          { success: false, error: "Non authentifié" },
+          { status: 401 }
+              );
   }
 
-  // Validation minimale
-  if (!body.userId || !body.agentId || !body.type || !body.status) {
-    return NextResponse.json(
-      { success: false, error: "userId, agentId, type et status sont requis" } satisfies ApiResponse<never>,
-      { status: 400 }
-    );
-  }
-
-  // TODO: vérifier l'authentification
-  // const session = await getServerSession(authOptions);
-  // if (!session || session.user.id !== body.userId) {
-  //   return NextResponse.json({ success: false, error: "Non autorisé" }, { status: 401 });
-  // }
-
-  const newTask: Task = {
-    id: "task_" + Date.now(),
-    agentId: body.agentId,
-    type: body.type,
-    status: body.status,
-    platform: body.platform,
-    title: body.title,
-    description: body.description,
-    scheduledAt: body.scheduledAt,
-    executedAt: body.executedAt,
-    createdAt: new Date().toISOString(),
-    error: body.error,
-    metadata: body.metadata,
+  // ——— Lecture du body ———
+  let body: {
+        agentId:      AgentId;
+        type:         string;
+        platform:     string;
+        title:        string;
+        description?: string;
+        metadata?:    Record<string, unknown>;
   };
 
-  // TODO: persistance réelle
-  // const saved = await db.task.create({ data: { ...newTask, userId: body.userId } });
+  try {
+        body = await req.json();
+  } catch {
+        return NextResponse.json<ApiResponse<null>>(
+          { success: false, error: "Body JSON invalide" },
+          { status: 400 }
+              );
+  }
 
-  return NextResponse.json(
-    { success: true, data: newTask } satisfies ApiResponse<Task>,
+  const { agentId, type, platform, title, description, metadata } = body;
+
+  if (!agentId || !type || !platform || !title) {
+        return NextResponse.json<ApiResponse<null>>(
+          { success: false, error: "Champs obligatoires manquants : agentId, type, platform, title" },
+          { status: 400 }
+              );
+  }
+
+  // ——— Insertion en base ———
+  const { data, error } = await supabase
+      .from("tasks")
+      .insert({
+              user_id:     user.id,
+              agent_id:    agentId,
+              type,
+              platform,
+              title,
+              description: description ?? null,
+              metadata:    metadata    ?? {},
+              status:      "pending",
+      })
+      .select()
+      .single();
+
+  if (error) {
+        console.error("[POST /api/tasks] Erreur Supabase :", error.message);
+        return NextResponse.json<ApiResponse<null>>(
+          { success: false, error: error.message },
+          { status: 500 }
+              );
+  }
+
+  const task: Task = {
+        id:          data.id,
+        agentId:     data.agent_id  as AgentId,
+        type:        data.type,
+        status:      data.status    as TaskStatus,
+        platform:    data.platform,
+        title:       data.title,
+        description: data.description ?? undefined,
+        scheduledAt: data.scheduled_at ?? undefined,
+        executedAt:  data.executed_at  ?? undefined,
+        error:       data.error        ?? undefined,
+        metadata:    data.metadata     ?? {},
+        createdAt:   data.created_at,
+        updatedAt:   data.updated_at,
+  };
+
+  return NextResponse.json<ApiResponse<Task>>(
+    { success: true, data: task },
     { status: 201 }
-  );
+      );
 }

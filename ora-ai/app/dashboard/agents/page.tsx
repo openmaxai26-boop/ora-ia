@@ -2,9 +2,17 @@
 
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useCurrentUser, useAgentStats, useRecentTasks } from "@/lib/hooks/useDashboard";
+import { useCurrentUser, useAgentStats } from "@/lib/hooks/useDashboard";
 import { AGENTS, getAgentsForPlan } from "@/lib/config/agents";
 import type { AgentId } from "@/lib/types";
+
+const AGENT_DEMO_URLS: Partial<Record<AgentId, string>> = {
+  hina: "/dashboard/hina",
+  teva: "/dashboard/teva",
+  reva: "/dashboard/reva",
+  manu: "/dashboard/manu",
+  ari:  "/dashboard/ari",
+};
 
 export default function AgentsPage() {
   const { user } = useCurrentUser();
@@ -142,21 +150,31 @@ export default function AgentsPage() {
                     )}
                   </div>
 
-                  {/* Action */}
-                  <div className="flex-shrink-0">
+                  {/* Actions */}
+                  <div className="flex-shrink-0 flex flex-col gap-2 items-end">
                     {isAvailable ? (
-                      <button
-                        onClick={() => handleRunAgent(agent.id)}
-                        disabled={!!runningAgent}
-                        className={
-                          "px-5 py-2 rounded-xl font-bold text-sm transition-all " +
-                          (isRunning
-                            ? "bg-lagoon/20 text-lagoon cursor-wait"
-                            : "bg-lagoon text-white hover:bg-ocean disabled:opacity-50")
-                        }
-                      >
-                        {isRunning ? "Exécution…" : "▶ Lancer"}
-                      </button>
+                      <>
+                        {AGENT_DEMO_URLS[agent.id] && (
+                          <a
+                            href={AGENT_DEMO_URLS[agent.id]}
+                            className="px-5 py-2 rounded-xl font-bold text-sm bg-lagoon text-white hover:bg-ocean transition-all"
+                          >
+                            ▶ Tester
+                          </a>
+                        )}
+                        <button
+                          onClick={() => handleRunAgent(agent.id)}
+                          disabled={!!runningAgent}
+                          className={
+                            "px-5 py-2 rounded-xl font-semibold text-xs transition-all border " +
+                            (isRunning
+                              ? "border-lagoon text-lagoon cursor-wait bg-lagoon/10"
+                              : "border-gray-200 text-ocean/60 hover:border-lagoon hover:text-lagoon disabled:opacity-40")
+                          }
+                        >
+                          {isRunning ? "Exécution…" : "Exécution rapide"}
+                        </button>
+                      </>
                     ) : (
                       <a
                         href="/dashboard/settings"

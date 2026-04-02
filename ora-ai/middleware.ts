@@ -14,6 +14,7 @@ const PUBLIC_ROUTES = [
   "/signup",
   "/api/webhooks/whatsapp",
   "/api/webhooks/messenger",
+  "/api/webhook/whatsapp",  // Meta Cloud API webhook
   "/auth/callback",
 ];
 
@@ -79,7 +80,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Passer la session à la réponse (important pour le SSR)
+  // Headers de sécurité
+  supabaseResponse.headers.set("X-Content-Type-Options", "nosniff");
+  supabaseResponse.headers.set("X-Frame-Options", "DENY");
+  supabaseResponse.headers.set("X-XSS-Protection", "1; mode=block");
+  supabaseResponse.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+
   return supabaseResponse;
 }
 

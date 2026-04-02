@@ -51,8 +51,8 @@ export function useDashboardStats(userId: string | null) {
       const supabase = getSupabaseBrowserClient();
 
       // Appel de la fonction RPC Supabase
-      const { data, error: rpcError } = await supabase
-        .rpc("get_dashboard_stats" as never, { p_user_id: userId });
+      const { data, error: rpcError } = await (supabase as any)
+        .rpc("get_dashboard_stats", { p_user_id: userId });
 
       if (rpcError) throw rpcError;
 
@@ -107,7 +107,7 @@ export function useRecentTasks(
     try {
       const supabase = getSupabaseBrowserClient();
 
-      let query = supabase
+      let query = (supabase as any)
         .from("tasks" as never)
         .select("*", { count: "exact" })
         .eq("user_id", userId)
@@ -197,7 +197,7 @@ export function useAgentStats(userId: string | null) {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
 
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("tasks" as never)
         .select("agent_id, status, created_at")
         .eq("user_id", userId);
@@ -243,7 +243,7 @@ export function useIntegrations(userId: string | null) {
 
     async function fetch() {
       const supabase = getSupabaseBrowserClient();
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("integrations" as never)
         .select("platform, connected")
         .eq("user_id", userId);

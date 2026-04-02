@@ -40,7 +40,7 @@ export const runtime = "nodejs";
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY manquante");
-  return new Stripe(key, { apiVersion: "2025-01-27.acacia" });
+  return new Stripe(key, { apiVersion: "2026-03-25.dahlia" });
 }
 
 // ============================================================
@@ -149,10 +149,13 @@ async function handleCheckoutSession(session: Stripe.Checkout.Session) {
     stripeCustomerId,
     stripeSubId,
     stripePriceId,
-    currentPeriodStart: new Date(subscription.current_period_start * 1000).toISOString(),
-    currentPeriodEnd:   new Date(subscription.current_period_end   * 1000).toISOString(),
-    trialEnd: subscription.trial_end
-      ? new Date(subscription.trial_end * 1000).toISOString()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    currentPeriodStart: new Date(((subscription as any).current_period_start ?? priceItem?.current_period_start ?? 0) * 1000).toISOString(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    currentPeriodEnd:   new Date(((subscription as any).current_period_end   ?? priceItem?.current_period_end   ?? 0) * 1000).toISOString(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    trialEnd: (subscription as any).trial_end
+      ? new Date(((subscription as any).trial_end ?? 0) * 1000).toISOString()
       : undefined,
   });
 
@@ -188,11 +191,13 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     stripePriceId,
     plan,
     status,
-    currentPeriodStart: new Date(subscription.current_period_start * 1000).toISOString(),
-    currentPeriodEnd:   new Date(subscription.current_period_end   * 1000).toISOString(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    currentPeriodStart: new Date(((subscription as any).current_period_start ?? 0) * 1000).toISOString(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    currentPeriodEnd:   new Date(((subscription as any).current_period_end   ?? 0) * 1000).toISOString(),
     cancelAtPeriodEnd:  subscription.cancel_at_period_end,
     trialEnd: subscription.trial_end
-      ? new Date(subscription.trial_end * 1000).toISOString()
+      ? new Date(((subscription as any).trial_end ?? 0) * 1000).toISOString()
       : undefined,
   });
 
@@ -221,7 +226,8 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 
   // Mettre le statut en past_due
   const supabase = (await import("@/lib/db/supabase")).getSupabaseServerClient();
-  const { error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .from("subscriptions")
     .update({
       status:     "past_due",
@@ -253,7 +259,8 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 
   // Remettre le statut en active si était past_due
   const supabase = (await import("@/lib/db/supabase")).getSupabaseServerClient();
-  await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any)
     .from("subscriptions")
     .update({
       status:     "active",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useCurrentUser } from "@/lib/hooks/useDashboard";
@@ -16,7 +16,7 @@ import {
   type UserSubscription,
 } from "@/lib/db/settings";
 
-export default function SettingsPage() {
+function SettingsContent() {
   const searchParams  = useSearchParams();
   const { user, loading: userLoading } = useCurrentUser();
 
@@ -389,5 +389,19 @@ export default function SettingsPage() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout active="settings">
+        <div className="flex items-center justify-center h-64">
+          <div className="w-8 h-8 border-2 border-lagoon border-t-transparent rounded-full animate-spin" />
+        </div>
+      </DashboardLayout>
+    }>
+      <SettingsContent />
+    </Suspense>
   );
 }

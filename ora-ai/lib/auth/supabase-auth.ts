@@ -162,7 +162,7 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
   if (!user) return null;
 
   // Récupérer le profil étendu depuis la table public.users
-  const { data: profile } = await supabase
+  const { data: profile } = await (supabase as any)
     .from("users" as never)
     .select("*")
     .eq("id", user.id)
@@ -189,13 +189,13 @@ export function onAuthStateChange(
       return;
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await (supabase as any)
       .from("users" as never)
       .select("*")
       .eq("id", session.user.id)
       .single();
 
-    callback((profile as UserProfile) ?? null);
+    callback((profile as unknown as UserProfile) ?? null);
   });
 
   // Retourner la fonction de désabonnement

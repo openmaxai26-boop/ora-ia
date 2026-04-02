@@ -56,7 +56,7 @@ export async function getProfile(): Promise<UserProfile | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("profiles")
     .select("*")
     .eq("user_id", user.id)
@@ -89,7 +89,7 @@ async function createDefaultProfile(userId: string, email: string): Promise<User
     langue: "Français",
   };
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("profiles")
     .insert(defaultProfile)
     .select()
@@ -112,7 +112,7 @@ export async function updateProfile(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Non authentifié" };
 
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from("profiles")
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq("user_id", user.id);
@@ -136,7 +136,7 @@ export async function getNotifications(): Promise<UserNotifications | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("user_notifications")
     .select("*")
     .eq("user_id", user.id)
@@ -168,7 +168,7 @@ async function createDefaultNotifications(userId: string): Promise<UserNotificat
     alertes_erreur: true,
   };
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("user_notifications")
     .insert(defaults)
     .select()
@@ -191,7 +191,7 @@ export async function updateNotifications(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Non authentifié" };
 
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from("user_notifications")
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq("user_id", user.id);
@@ -215,7 +215,7 @@ export async function getSubscription(): Promise<UserSubscription | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("subscriptions")
     .select("*")
     .eq("user_id", user.id)
@@ -248,7 +248,7 @@ export async function getSubscription(): Promise<UserSubscription | null> {
  */
 export async function getProfileServer(userId: string): Promise<UserProfile | null> {
   const supabase = getSupabaseServerClient();
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("profiles")
     .select("*")
     .eq("user_id", userId)

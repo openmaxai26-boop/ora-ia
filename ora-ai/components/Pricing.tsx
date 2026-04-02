@@ -88,49 +88,51 @@ export default function Pricing() {
     const router = useRouter();
 
   const handleSubscribe = async (planKey: PlanKey | null) => {
-        // Plan "Business" → contact direct
-        if (!planKey || planKey === "business") {
-                router.push("mailto:contact@ora-ai.pf");
-                return;
-        }
+    // Plan "Business" → contact direct
+    if (!planKey || planKey === "business") {
+      window.location.href = "mailto:contact@ora-ai.pf?subject=Demande%20plan%20Business%20%E2%80%94%20Ora%20AI";
+      return;
+    }
 
-        setLoadingPlan(planKey);
+    setLoadingPlan(planKey);
 
-        try {
-                // Vérifier si l'utilisateur est connecté
-          const supabase = getSupabaseBrowserClient();
-                const {
-                          data: { user },
-                } = await supabase.auth.getUser();
+    try {
+      // Vérifier si l'utilisateur est connecté
+      const supabase = getSupabaseBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
 
-          if (!user) {
-                    // Rediriger vers la page de connexion avec retour sur les tarifs
-                  router.push("/login?redirect=/#tarifs");
-                    return;
-          }
+      if (!user) {
+        // Pas connecté → inscription d'abord
+        router.push("/signup?plan=" + planKey);
+        return;
+      }
 
-          // Appeler l'API Stripe Checkout
-          const res = await fetch("/api/stripe/checkout", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ plan: planKey }),
-          });
+      // Plan Starter sans paiement → aller au dashboard directement
+      if (planKey === "starter") {
+        router.push("/dashboard");
+        return;
+      }
 
-          if (!res.ok) {
-                    const data = await res.json();
-                    throw new Error(data.error ?? "Erreur lors de la création du paiement");
-          }
+      // Appeler l'API Stripe Checkout pour les plans payants
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planKey }),
+      });
 
-          const { url } = await res.json();
-                if (url) {
-                          window.location.href = url;
-                }
-        } catch (err) {
-                console.error("[Pricing] Erreur checkout :", err);
-                alert("Une erreur est survenue. Veuillez réessayer.");
-        } finally {
-                setLoadingPlan(null);
-        }
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Erreur lors de la création du paiement");
+      }
+
+      const { url } = await res.json();
+      if (url) window.location.href = url;
+    } catch (err) {
+      console.error("[Pricing] Erreur checkout :", err);
+      alert("Une erreur est survenue. Veuillez réessayer dans quelques instants.");
+    } finally {
+      setLoadingPlan(null);
+    }
   };
 
   return (
@@ -140,16 +142,16 @@ export default function Pricing() {
                       <div className="text-center mb-16">
                                 <div className="inline-block bg-lagoon/10 text-lagoon font-semibold px-4 py-2 rounded-full text-sm mb-4">
                                             Tarifs transparents
-                                </div>div>
+                                </div>
                                 <h2 className="text-4xl md:text-5xl font-black text-ocean mb-4">
                                             Un prix juste,{" "}
-                                            <span className="text-lagoon"> adapté au fenua</span>span>
-                                </h2>h2>
+                                            <span className="text-lagoon"> adapté au fenua</span>
+                                </h2>
                                 <p className="text-ocean/60 text-xl max-w-2xl mx-auto">
                                             Tarifs en Francs CFP. Sans engagement. Éligible à l&apos;Aide à la
                                             Création Numérique (ACN) de la DGEN.
-                                </p>p>
-                      </div>div>
+                                </p>
+                      </div>
               
                 {/* Plans */}
                       <div className="grid md:grid-cols-3 gap-8 items-start">
@@ -166,24 +168,24 @@ export default function Pricing() {
                                         {plan.badge && (
                                                                           <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-lagoon text-white text-xs font-bold px-4 py-1.5 rounded-full whitespace-nowrap">
                                                                             {plan.badge}
-                                                                          </div>div>
+                                                                          </div>
                                                       )}
                                                       <div className="mb-6">
                                                                         <h3 className="text-xl font-bold text-ocean mb-1">
                                                                           {plan.name}
-                                                                        </h3>h3>
+                                                                        </h3>
                                                                         <p className="text-ocean/50 text-sm mb-4">
                                                                           {plan.description}
-                                                                        </p>p>
+                                                                        </p>
                                                                         <div className="flex items-baseline gap-1">
                                                                                             <span className="text-4xl font-black text-ocean">
                                                                                               {plan.price}
-                                                                                              </span>span>
+                                                                                              </span>
                                                                                             <span className="text-ocean/50 font-medium">
                                                                                               {plan.currency} {plan.period}
-                                                                                              </span>span>
-                                                                        </div>div>
-                                                      </div>div>
+                                                                                              </span>
+                                                                        </div>
+                                                      </div>
                                       
                                                       <ul className="space-y-3 mb-8">
                                                         {plan.features.map((f) => (
@@ -193,11 +195,11 @@ export default function Pricing() {
                                                                                                   >
                                                                                                   <span className="mt-0.5 w-5 h-5 bg-lagoon/15 text-lagoon rounded-full flex items-center justify-center text-xs font-bold shrink-0">
                                                                                                                           ✓
-                                                                                                    </span>span>
+                                                                                                    </span>
                                                                               {f}
-                                                                            </li>li>
+                                                                            </li>
                                                                           ))}
-                                                      </ul>ul>
+                                                      </ul>
                                       
                                                       <button
                                                                           onClick={() => handleSubscribe(plan.planKey)}
@@ -205,25 +207,25 @@ export default function Pricing() {
                                                                           className={`block w-full text-center px-6 py-3 rounded-full font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed ${plan.ctaStyle}`}
                                                                         >
                                                         {isLoading ? "Chargement..." : plan.cta}
-                                                      </button>button>
-                                      </div>div>
+                                                      </button>
+                                      </div>
                                     );
         })}
-                      </div>div>
+                      </div>
               
                 {/* ACN Note */}
                       <div className="mt-12 bg-ocean/5 border border-ocean/10 rounded-2xl p-6 text-center">
                                 <p className="text-ocean/70">
-                                            💡 <strong>Bon à savoir :</strong>strong> L&apos;Aide à la Création
+                                            💡 <strong>Bon à savoir :</strong> L&apos;Aide à la Création
                                             Numérique (ACN) de la DGEN peut financer une partie de votre
                                             abonnement Ora AI. Renseignez-vous auprès de{" "}
                                             <span className="text-lagoon font-semibold">
                                                           la Direction Générale de l&apos;Économie Numérique
-                                            </span>span>
+                                            </span>
                                             .
-                                </p>p>
-                      </div>div>
-              </div>div>
-        </section>section>
+                                </p>
+                      </div>
+              </div>
+        </section>
       );
-}</section>
+}

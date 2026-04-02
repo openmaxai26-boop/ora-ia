@@ -144,25 +144,17 @@ export async function generateProspectMessage(
     const message =
       "Ia ora na " +
       prospect.name.split(" ")[0] +
-      " ! 🌺
-
-" +
+      " ! 🌺\n\n" +
       "J'ai découvert votre profil et le travail de " +
       (prospect.company ?? "votre entreprise") +
       " — impressionnant ce que vous faites dans le secteur " +
       (prospect.sector ?? "de votre activité") +
-      " au fenua.
-
-" +
+      " au fenua.\n\n" +
       "Chez " +
       config.entreprise +
       ", on aide les entreprises polynésiennes à automatiser leur communication et leur développement commercial grâce à l'IA. " +
-      "Résultat : nos clients gagnent en moyenne 10h/semaine tout en augmentant leur visibilité.
-
-" +
-      "Est-ce que ça vous parlerait d'en discuter 15 minutes cette semaine ?
-
-Mauruuru 🙏";
+      "Résultat : nos clients gagnent en moyenne 10h/semaine tout en augmentant leur visibilité.\n\n" +
+      "Est-ce que ça vous parlerait d'en discuter 15 minutes cette semaine ?\n\nMauruuru 🙏";
     return { success: true, data: message };
   }
 

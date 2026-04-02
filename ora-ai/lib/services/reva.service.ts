@@ -69,7 +69,7 @@ export async function suggestKeywords(
   // const client = new RestClient(login, password);
   // const result = await client.post("/v3/keywords_data/google/search_volume/live", [...]);
 
-  const mockKeywords: SeoKeyword[] = [
+  const mockKeywords = [
     {
       keyword: sector + " Tahiti",
       volume: 320,
@@ -105,7 +105,7 @@ export async function suggestKeywords(
       intent: "transactional",
       location: "Tahiti",
     },
-  ].slice(0, count);
+  ].slice(0, count) as SeoKeyword[];
 
   return { success: true, data: mockKeywords };
 }
@@ -155,49 +155,31 @@ export async function generateArticle(
     content:
       "<h1>" +
       keyword.keyword +
-      " : Guide Complet 2026</h1>
-
-" +
+      " : Guide Complet 2026</h1>\n\n" +
       "<p>Ia ora na ! Vous cherchez des informations sur <strong>" +
       keyword.keyword +
-      "</strong> en Polynésie française ? Dans ce guide, nous vous partageons tout ce qu'il faut savoir.</p>
-
-" +
+      "</strong> en Polynésie française ? Dans ce guide, nous vous partageons tout ce qu'il faut savoir.</p>\n\n" +
       "<h2>Pourquoi choisir " +
       keyword.keyword +
-      " au fenua ?</h2>
-" +
-      "<p>La Polynésie française regorge de talents locaux et de produits authentiques. Découvrir le meilleur du fenua est une expérience unique qui mérite d'être vécue pleinement.</p>
-
-" +
-      "<h2>Nos conseils pratiques</h2>
-" +
-      "<ul>
-" +
-      "<li>Privilégiez les producteurs locaux pour soutenir l'économie polynésienne</li>
-" +
-      "<li>Consultez les avis et recommandations de la communauté</li>
-" +
-      "<li>N'hésitez pas à demander conseil aux habitants</li>
-" +
-      "</ul>
-
-" +
+      " au fenua ?</h2>\n" +
+      "<p>La Polynésie française regorge de talents locaux et de produits authentiques. Découvrir le meilleur du fenua est une expérience unique qui mérite d'être vécue pleinement.</p>\n\n" +
+      "<h2>Nos conseils pratiques</h2>\n" +
+      "<ul>\n" +
+      "<li>Privilégiez les producteurs locaux pour soutenir l'économie polynésienne</li>\n" +
+      "<li>Consultez les avis et recommandations de la communauté</li>\n" +
+      "<li>N'hésitez pas à demander conseil aux habitants</li>\n" +
+      "</ul>\n\n" +
       "<h2>Où trouver " +
       keyword.keyword +
       " à " +
       config.targetLocation +
-      " ?</h2>
-" +
+      " ?</h2>\n" +
       "<p>" +
       config.entreprise +
       " est une référence reconnue dans le domaine du " +
       config.sector +
-      " sur l'île.</p>
-
-" +
-      "<h2>Conclusion</h2>
-" +
+      " sur l'île.</p>\n\n" +
+      "<h2>Conclusion</h2>\n" +
       "<p>Mauruuru de nous avoir lus ! Pour plus d'informations, contactez " +
       config.entreprise +
       ". 🌸</p>",

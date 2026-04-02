@@ -58,7 +58,7 @@ export async function getUserIdByStripeCustomer(
 ): Promise<string | null> {
   const supabase = getSupabaseServerClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("subscriptions")
     .select("user_id")
     .eq("stripe_customer_id", stripeCustomerId)
@@ -101,7 +101,7 @@ export async function upsertSubscription(
     updated_at:             new Date().toISOString(),
   };
 
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from("subscriptions")
     .upsert(record, {
       onConflict:            "stripe_subscription_id",
@@ -130,7 +130,7 @@ export async function cancelSubscription(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = getSupabaseServerClient();
 
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from("subscriptions")
     .update({
       status:       "canceled",

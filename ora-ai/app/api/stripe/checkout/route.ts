@@ -23,7 +23,7 @@ const PLAN_PRICE_IDS: Record<StripePlan, string | undefined> = {
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY manquante");
-  return new Stripe(key, { apiVersion: "2025-01-27.acacia" });
+  return new Stripe(key, { apiVersion: "2026-03-25.dahlia" });
 }
 
 export async function POST(req: NextRequest) {
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     .not("stripe_customer_id", "is", null)
     .single();
 
-  const existingCustomerId = existingSub?.stripe_customer_id ?? undefined;
+  const existingCustomerId = (existingSub as { stripe_customer_id?: string } | null)?.stripe_customer_id ?? undefined;
 
   // ——— 4. Créer la session Stripe Checkout ———
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -148,7 +148,8 @@ export async function GET(req: NextRequest) {
     .not("stripe_customer_id", "is", null)
     .single();
 
-  if (!sub?.stripe_customer_id) {
+  const subTyped = sub as { stripe_customer_id?: string } | null;
+  if (!subTyped?.stripe_customer_id) {
     return NextResponse.json(
       { error: "Aucun abonnement Stripe trouvé" },
       { status: 404 }
@@ -160,7 +161,7 @@ export async function GET(req: NextRequest) {
     const appUrl  = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
     const portalParams: Stripe.BillingPortal.SessionCreateParams = {
-      customer:   sub.stripe_customer_id,
+      customer:   subTyped.stripe_customer_id,
       return_url: appUrl + "/dashboard/settings",
     };
 
@@ -172,7 +173,7 @@ export async function GET(req: NextRequest) {
 
     const portalSession = await stripe.billingPortal.sessions.create(portalParams);
 
-    console.log("[Stripe Portal] Session créée pour customer :", sub.stripe_customer_id);
+    console.log("[Stripe Portal] Session créée pour customer :", subTyped.stripe_customer_id);
 
     return NextResponse.redirect(portalSession.url);
   } catch (err: unknown) {

@@ -55,7 +55,8 @@ export async function GET(req: NextRequest) {
   }
 
   // ——— Mapper les colonnes snake_case → camelCase ———
-  const tasks: Task[] = (data ?? []).map((row) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tasks: Task[] = ((data ?? []) as any[]).map((row) => ({
         id:          row.id,
         agentId:     row.agent_id     as AgentId,
         type:        row.type,
@@ -123,7 +124,8 @@ export async function POST(req: NextRequest) {
   }
 
   // ——— Insertion en base ———
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
       .from("tasks")
       .insert({
               user_id:     user.id,
@@ -159,7 +161,6 @@ export async function POST(req: NextRequest) {
         error:       data.error        ?? undefined,
         metadata:    data.metadata     ?? {},
         createdAt:   data.created_at,
-        updatedAt:   data.updated_at,
   };
 
   return NextResponse.json<ApiResponse<Task>>(

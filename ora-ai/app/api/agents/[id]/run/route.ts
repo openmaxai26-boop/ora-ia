@@ -94,7 +94,7 @@ export async function POST(
           language: "fr-pf" as const,
           sector: "Commerce",
           postFrequency: 5,
-          platforms: ["instagram", "facebook"] as const,
+          platforms: ["instagram", "facebook"] as ("facebook" | "instagram" | "tiktok")[],
         };
 
         const postResult = await generatePost(config, body.topic);
@@ -104,8 +104,8 @@ export async function POST(
 
         // Publication sur la/les plateforme(s) demandée(s)
         const publishResult = body.platform === "facebook"
-          ? await publishToFacebook(postResult.data, config.pageId ?? "mock_page_id")
-          : await publishToInstagram(postResult.data, config.igAccountId ?? "mock_ig_id");
+          ? await publishToFacebook(postResult.data, "mock_page_id")
+          : await publishToInstagram(postResult.data, "mock_ig_id");
 
         if (!publishResult.success) {
           return NextResponse.json(publishResult, { status: 500 });
@@ -117,7 +117,7 @@ export async function POST(
         return NextResponse.json({
           success: true,
           data: { post: postResult.data, publish: publishResult.data, task },
-        } satisfies ApiResponse<typeof task & { post: unknown; publish: unknown }>);
+        });
       }
 
       // ----------------------------------------------------------
@@ -236,9 +236,21 @@ export async function POST(
         const task = buildManuTask(offerResult.data, "job_post", body.userId, "linkedin");
         // TODO: await db.task.create({ data: { ...task, id: generateId() } });
 
+        const jobOffer = {
+          ...offerResult.data,
+          requirements: offerResult.data.skills.length > 0
+            ? offerResult.data.skills
+            : ["Expérience dans le domaine", "Bonne communication", "Esprit d'équipe"],
+          benefits: [
+            "Environnement de travail agréable au fenua",
+            "Salaire selon profil et expérience",
+            "Formation et montée en compétences",
+            "Équipe dynamique et bienveillante",
+          ],
+        };
         return NextResponse.json({
           success: true,
-          data: { offer: offerResult.data, publish: publishResult, task },
+          data: { jobOffer, publish: publishResult, task },
         });
       }
 
@@ -283,12 +295,14 @@ export async function POST(
           })
         );
 
+        const validResults = results.filter(Boolean) as { prospect: typeof prospectsResult.data[0]; message: string; task: ReturnType<typeof buildAriTask> }[];
         return NextResponse.json({
           success: true,
           data: {
             prospectsFound: prospectsResult.data.length,
-            messagesSent: results.filter(Boolean).length,
-            details: results.filter(Boolean),
+            messagesSent: validResults.length,
+            prospects: prospectsResult.data,
+            messages: validResults.map((r) => ({ prospect: r.prospect, message: r.message })),
           },
         });
       }

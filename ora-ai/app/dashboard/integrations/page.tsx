@@ -19,7 +19,7 @@ const ALL_INTEGRATIONS = [
   { platform: "stripe",         label: "Stripe", icon: "💳", category: "Paiement", description: "Gérez votre abonnement Ora AI" },
 ];
 
-const CATEGORIES = [...new Set(ALL_INTEGRATIONS.map((i) => i.category))];
+const CATEGORIES = Array.from(new Set(ALL_INTEGRATIONS.map((i) => i.category)));
 
 export default function IntegrationsPage() {
   const { user } = useCurrentUser();
@@ -44,8 +44,9 @@ export default function IntegrationsPage() {
       const supabase = getSupabaseBrowserClient();
       const integ = ALL_INTEGRATIONS.find((i) => i.platform === platform)!;
 
-      await supabase
-        .from("integrations" as never)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from("integrations")
         .upsert(
           {
             user_id: userId,
